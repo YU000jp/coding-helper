@@ -1,7 +1,7 @@
 {
   "name": "@yu000jp/skillpack-helper",
   "version": "0.1.0",
-  "description": "Support library for packaging AI coding knowledge into reusable skill packs.",
+  "description": "CLI tool for managing AI skill packs in downstream repositories.",
   "homepage": "https://github.com/YU000jp/skillpack-helper#readme",
   "repository": {
     "type": "git",
@@ -20,21 +20,15 @@
   ],
   "author": "YU000jp",
   "type": "commonjs",
-  "main": "src/index.js",
-  "exports": {
-    ".": {
-      "require": "./src/index.js",
-      "import": "./src/index.js",
-      "default": "./src/index.js"
-    },
-    "./package.json": "./package.json",
-    "./schema/skillpack.manifest.schema.json": "./schema/skillpack.manifest.schema.json"
-  },
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "src",
+    "src/cli.js",
+    "src/cli",
+    "src/core",
+    "src/generator",
+    "src/registry",
     "schema",
     "README.md",
     "package.json"
