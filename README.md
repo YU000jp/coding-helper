@@ -1,13 +1,13 @@
 # @yu000jp/skillpack-helper
 
-## Use Cases
+CLI-only `devDependency` for downstream repositories that manage AI helper dictionaries.
 
-Use this package in a downstream repository when you want to:
+It is used to:
 
 - validate `skillpack.manifest.json`
-- generate `SKILL.md`
+- normalize helper entries with `JSCPID`
 - build deterministic bundle output
-- run skill pack management from `npm scripts`
+- report duplicate helpers before packaging
 
 ## Install
 
@@ -17,7 +17,7 @@ npm i -D @yu000jp/skillpack-helper
 
 ## Use In a Repository
 
-Add scripts like these to the consuming repo and use them as the normal workflow:
+Add scripts to the consuming repository and treat them as the normal workflow:
 
 ```json
 {
@@ -29,7 +29,7 @@ Add scripts like these to the consuming repo and use them as the normal workflow
 }
 ```
 
-Run them from the consuming repo:
+Typical flow:
 
 ```bash
 npm run skillpack:validate
@@ -37,15 +37,74 @@ npm run skillpack:build
 npm run skillpack:pack
 ```
 
+`build` and `pack` produce a bundle with:
+
+- `dependencyOrder`
+- `packs`
+- `helperDictionary.canonical`
+- `helperDictionary.duplicates`
+
+Example:
+
+```json
+{
+  "dependencyOrder": ["pack-a", "pack-b"],
+  "helperDictionary": {
+    "canonical": [
+      {
+        "jscpid": "jscpid_0123456789abcdef",
+        "source": {
+          "packName": "pack-a",
+          "helperId": "shared"
+        }
+      }
+    ],
+    "duplicates": [
+      {
+        "jscpid": "jscpid_0123456789abcdef",
+        "kept": {
+          "packName": "pack-a",
+          "helperId": "shared"
+        },
+        "removed": {
+          "packName": "pack-b",
+          "helperId": "shared-copy"
+        }
+      }
+    ]
+  }
+}
+```
+
+## Manifest Shape
+
+Each pack provides one `skillpack.manifest.json` file. The important fields are:
+
+- `name`
+- `version`
+- `purpose`
+- `summary`
+- `dependsOn`
+- `helpers[]`
+
+Each helper entry contains:
+
+- `id`
+- `title`
+- `purpose`
+- `tags`
+- `content`
+- `references`
+
 ## Command Reference
 
-- `create`: scaffold a new pack
-- `update`: regenerate `SKILL.md`
-- `validate`: check a pack or pack tree
-- `build`: write deterministic bundle output
-- `pack`: write JSON bundle output
+- `create` scaffold a new helper pack
+- `update` regenerate `SKILL.md` from the manifest
+- `validate` check one pack or a pack tree
+- `build` write deterministic bundle output to disk
+- `pack` write bundle JSON to stdout or a file
 
-## Optional Direct Use
+Direct execution is supported when you need it:
 
 ```bash
 npx skillpack-helper validate ./packs

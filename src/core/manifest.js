@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { canonicalize, computeJSCPID } = require("./jscpid");
+const { normalizeHelper, validateHelper } = require("./helpers");
 
 function defaultManifest(input = {}) {
   return {
@@ -11,15 +12,16 @@ function defaultManifest(input = {}) {
     purpose: input.purpose || "",
     summary: input.summary || "",
     dependsOn: input.dependsOn || [],
-    skills: input.skills || [],
+    helpers: input.helpers || [],
   };
 }
 
 function normalizeManifest(manifest) {
+  const helpers = Array.isArray(manifest.helpers) ? manifest.helpers.map(normalizeHelper) : [];
   const normalized = canonicalize({
     ...defaultManifest(manifest),
     dependsOn: manifest.dependsOn || [],
-    skills: (manifest.skills || []).map(normalizeSkill),
+    helpers,
   });
   normalized.jscpid = computeJSCPID({
     name: normalized.name,
@@ -27,34 +29,7 @@ function normalizeManifest(manifest) {
     purpose: normalized.purpose,
     summary: normalized.summary,
     dependsOn: normalized.dependsOn,
-    skills: normalized.skills.map((skill) => skill.jscpid),
-  });
-  return normalized;
-}
-
-function normalizeSkill(skill) {
-  const normalized = canonicalize({
-    id: skill.id,
-    title: skill.title || skill.id,
-    summary: skill.summary || "",
-    purpose: skill.purpose || "",
-    contracts: skill.contracts || [],
-    guarantees: skill.guarantees || [],
-    usagePatterns: skill.usagePatterns || [],
-    implementations: {
-      ts: (((skill.implementations || {}).ts) || []).map(String),
-      rust: (((skill.implementations || {}).rust) || []).map(String),
-    },
-    dependsOn: skill.dependsOn || [],
-  });
-  normalized.jscpid = computeJSCPID({
-    purpose: normalized.purpose,
-    summary: normalized.summary,
-    contracts: normalized.contracts,
-    guarantees: normalized.guarantees,
-    usagePatterns: normalized.usagePatterns,
-    implementations: normalized.implementations,
-    dependsOn: normalized.dependsOn,
+    helpers: normalized.helpers.map((helper) => helper.jscpid),
   });
   return normalized;
 }
@@ -78,7 +53,7 @@ function collectIssues(manifest, context = {}) {
 
   requiredString(manifest.name, "name", issues, context.manifestPath);
   requiredString(manifest.version, "version", issues, context.manifestPath);
-  requiredString(manifest.purpose, "purpose", issues, context.manifestPath, true);
+  requiredString(manifest.purpose, "purpose", issues, context.manifestPath);
 
   if (!Array.isArray(manifest.dependsOn)) {
     issues.push(issue(context.manifestPath, "dependsOn must be an array of pack names"));
@@ -86,29 +61,19 @@ function collectIssues(manifest, context = {}) {
     issues.push(issue(context.manifestPath, "dependsOn must be an array of strings"));
   }
 
-  if (!Array.isArray(manifest.skills) || manifest.skills.length === 0) {
-    issues.push(issue(context.manifestPath, "skills must contain at least one skill"));
+  if (!Array.isArray(manifest.helpers) || manifest.helpers.length === 0) {
+    issues.push(issue(context.manifestPath, "helpers must contain at least one helper"));
   } else {
-    const skillIds = new Set();
-    for (const skill of manifest.skills) {
-      if (!skill || typeof skill !== "object" || Array.isArray(skill)) {
-        issues.push(issue(context.manifestPath, "each skill must be an object"));
-        continue;
+    const helperIds = new Set();
+    for (const helper of manifest.helpers) {
+      const helperIssues = validateHelper(helper, context);
+      issues.push(...helperIssues);
+      if (helper && typeof helper === "object" && !Array.isArray(helper)) {
+        if (helperIds.has(helper.id)) {
+          issues.push(issue(context.manifestPath, `duplicate helper id: ${helper.id}`));
+        }
+        helperIds.add(helper.id);
       }
-
-      requiredString(skill.id, "skills[].id", issues, context.manifestPath);
-      requiredString(skill.title, "skills[].title", issues, context.manifestPath, true);
-      requiredString(skill.summary, "skills[].summary", issues, context.manifestPath, true);
-      requiredString(skill.purpose, "skills[].purpose", issues, context.manifestPath, true);
-      requiredArrayOfStrings(skill.contracts, "skills[].contracts", issues, context.manifestPath);
-      requiredArrayOfStrings(skill.guarantees, "skills[].guarantees", issues, context.manifestPath);
-      requiredArrayOfStrings(skill.usagePatterns, "skills[].usagePatterns", issues, context.manifestPath);
-      requiredArrayOfStrings(skill.dependsOn || [], "skills[].dependsOn", issues, context.manifestPath);
-      requiredSkillLinks(skill.implementations, "skills[].implementations", issues, context.manifestPath);
-      if (skillIds.has(skill.id)) {
-        issues.push(issue(context.manifestPath, `duplicate skill id: ${skill.id}`));
-      }
-      skillIds.add(skill.id);
     }
   }
 
@@ -118,17 +83,9 @@ function collectIssues(manifest, context = {}) {
     purpose: manifest.purpose,
     summary: manifest.summary || "",
     dependsOn: manifest.dependsOn || [],
-    skills: (manifest.skills || []).map((skill) => normalizeSkill(skill).jscpid),
+    helpers: Array.isArray(manifest.helpers) ? manifest.helpers.map((helper) => normalizeHelper(helper).jscpid) : [],
   })) {
     issues.push(issue(context.manifestPath, "manifest.jscpid does not match computed value"));
-  }
-
-  for (const skill of manifest.skills || []) {
-    if (!skill || typeof skill !== "object") continue;
-    const normalizedSkill = normalizeSkill(skill);
-    if (skill.jscpid && skill.jscpid !== normalizedSkill.jscpid) {
-      issues.push(issue(context.manifestPath, `skill ${skill.id} jscpid does not match computed value`));
-    }
   }
 
   const dependencySet = new Set(manifest.dependsOn || []);
@@ -143,21 +100,6 @@ function requiredString(value, field, issues, manifestPath, allowEmpty = false) 
   if (typeof value !== "string" || (!allowEmpty && value.trim() === "")) {
     issues.push(issue(manifestPath, `${field} must be a non-empty string`));
   }
-}
-
-function requiredArrayOfStrings(value, field, issues, manifestPath) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
-    issues.push(issue(manifestPath, `${field} must be an array of strings`));
-  }
-}
-
-function requiredSkillLinks(value, field, issues, manifestPath) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    issues.push(issue(manifestPath, `${field} must be an object with ts and rust arrays`));
-    return;
-  }
-  requiredArrayOfStrings(value.ts || [], `${field}.ts`, issues, manifestPath);
-  requiredArrayOfStrings(value.rust || [], `${field}.rust`, issues, manifestPath);
 }
 
 function issue(pathValue, message) {

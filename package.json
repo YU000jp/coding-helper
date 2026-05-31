@@ -1,7 +1,7 @@
 {
   "name": "@yu000jp/skillpack-helper",
   "version": "0.1.0",
-  "description": "DevDependency CLI tool for managing AI skill packs in downstream repositories.",
+  "description": "DevDependency CLI tool for managing JSCPID-based helper dictionaries in downstream repositories.",
   "homepage": "https://github.com/YU000jp/skillpack-helper#readme",
   "repository": {
     "type": "git",
@@ -14,7 +14,9 @@
     "ai",
     "coding",
     "helper",
-    "skills",
+    "dictionary",
+    "jscpid",
+    "dedupe",
     "workspace",
     "prompting"
   ],

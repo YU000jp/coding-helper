@@ -21,7 +21,10 @@ function walk(dir, result) {
     result.push(dir);
     return;
   }
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((left, right) =>
+    left.name.localeCompare(right.name)
+  );
+  for (const entry of entries) {
     if (entry.isDirectory()) {
       walk(path.join(dir, entry.name), result);
     }
@@ -37,7 +40,7 @@ function loadPack(dir) {
 function resolvePackSelection(root, selected = []) {
   const packs = discoverPackDirectories(root).map((dir) => loadPack(dir));
   if (packs.length === 0) {
-    return { packs: [], duplicateSkills: [] };
+    return { packs: [], helperDictionary: { canonical: [], duplicates: [] }, dependencyOrder: [] };
   }
 
   const normalizedPacks = packs.map((pack) => ({ ...pack, manifest: normalizeManifest(pack.manifest) }));
@@ -83,33 +86,46 @@ function resolvePackSelection(root, selected = []) {
     visit(pack);
   }
 
-  const dedupedSkills = new Map();
-  const dedupedPacks = [];
-  const duplicateSkills = [];
+  const dedupedHelpers = new Map();
+  const resolvedPacks = [];
+  const canonicalHelpers = [];
+  const duplicateHelpers = [];
 
   for (const pack of ordered) {
-    const skillMarkdown = renderSkillMarkdown(pack.manifest);
-    const keptSkills = [];
-    for (const skill of pack.manifest.skills) {
-      const existing = dedupedSkills.get(skill.jscpid);
+    const helperMarkdown = renderSkillMarkdown(pack.manifest);
+    for (const helper of pack.manifest.helpers) {
+      const existing = dedupedHelpers.get(helper.jscpid);
+      const helperSource = helperSourceRef(pack, helper);
       if (existing) {
-        duplicateSkills.push({ jscpid: skill.jscpid, kept: existing.packName, removed: pack.manifest.name });
+        duplicateHelpers.push({
+          jscpid: helper.jscpid,
+          kept: existing.source,
+          removed: helperSource,
+        });
         continue;
       }
-      dedupedSkills.set(skill.jscpid, { packName: pack.manifest.name, skillId: skill.id });
-      keptSkills.push(skill);
+      const canonicalEntry = {
+        jscpid: helper.jscpid,
+        source: helperSource,
+        helper,
+      };
+      dedupedHelpers.set(helper.jscpid, canonicalEntry);
+      canonicalHelpers.push(canonicalEntry);
     }
-    dedupedPacks.push({
+    resolvedPacks.push({
       ...pack,
-      skillMarkdown,
-      manifest: {
-        ...pack.manifest,
-        skills: keptSkills,
-      },
+      helperMarkdown,
     });
   }
 
-  return { packs: dedupedPacks, duplicateSkills };
+  return {
+    packs: resolvedPacks,
+    helperDictionary: {
+      canonical: canonicalHelpers,
+      duplicates: duplicateHelpers,
+    },
+    dependencyOrder: ordered.map((pack) => pack.manifest.name),
+  };
 }
 
 function lookupPack(token, byName, byDir, byBaseName) {
@@ -117,20 +133,30 @@ function lookupPack(token, byName, byDir, byBaseName) {
 }
 
 function buildBundle({ root, selected = [] }) {
-  const { packs, duplicateSkills } = resolvePackSelection(root, selected);
+  const { packs, helperDictionary, dependencyOrder } = resolvePackSelection(root, selected);
   return {
     root,
-    generatedAt: new Date().toISOString(),
+    dependencyOrder,
     packs: packs.map((pack) => ({
       name: pack.manifest.name,
       dir: pack.dir,
       manifestPath: pack.manifestPath,
       manifest: pack.manifest,
-      skillMarkdown: pack.skillMarkdown,
+      helperMarkdown: pack.helperMarkdown,
       jscpid: pack.manifest.jscpid,
       dependencies: pack.manifest.dependsOn,
     })),
-    duplicateSkills,
+    helperDictionary,
+  };
+}
+
+function helperSourceRef(pack, helper) {
+  return {
+    packName: pack.manifest.name,
+    packDir: pack.dir,
+    manifestPath: pack.manifestPath,
+    helperId: helper.id,
+    helperTitle: helper.title,
   };
 }
 

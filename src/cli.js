@@ -57,9 +57,11 @@ function parseCliArgs(argv) {
     purpose: null,
     title: null,
     summary: null,
-    skillId: null,
-    ts: [],
-    rust: [],
+    helperId: null,
+    helperPurpose: null,
+    content: null,
+    tags: [],
+    references: [],
     dependsOn: [],
     force: false,
   };
@@ -99,16 +101,24 @@ function parseCliArgs(argv) {
         result.summary = nextValue;
         if (!inlineValue) index += 1;
         break;
-      case "--skill-id":
-        result.skillId = nextValue;
+      case "--helper-id":
+        result.helperId = nextValue;
         if (!inlineValue) index += 1;
         break;
-      case "--ts":
-        result.ts = splitList(nextValue);
+      case "--helper-purpose":
+        result.helperPurpose = nextValue;
         if (!inlineValue) index += 1;
         break;
-      case "--rust":
-        result.rust = splitList(nextValue);
+      case "--content":
+        result.content = nextValue;
+        if (!inlineValue) index += 1;
+        break;
+      case "--tags":
+        result.tags = splitList(nextValue);
+        if (!inlineValue) index += 1;
+        break;
+      case "--references":
+        result.references = splitList(nextValue);
         if (!inlineValue) index += 1;
         break;
       case "--depends-on":
@@ -143,9 +153,9 @@ function printHelp() {
       "skillpack-helper <command> [options]",
       "",
       "Commands:",
-      "  create    Scaffold a new skill pack",
+      "  create    Scaffold a new helper pack",
       "  update    Regenerate SKILL.md from the manifest",
-      "  validate  Validate one pack or a pack root",
+      "  validate  Validate one helper pack or a pack root",
       "  build     Build a bundle output",
       "  pack      Emit a selected bundle",
       "",
@@ -154,11 +164,13 @@ function printHelp() {
       "  --out <path>",
       "  --name <pack-name>",
       "  --purpose <text>",
-      "  --title <skill-title>",
-      "  --summary <skill-summary>",
-      "  --skill-id <skill-id>",
-      "  --ts <path[,path...]>",
-      "  --rust <path[,path...]>",
+      "  --title <helper-title>",
+      "  --summary <pack-summary>",
+      "  --helper-id <helper-id>",
+      "  --helper-purpose <text>",
+      "  --content <text>",
+      "  --tags <tag[,tag...]>",
+      "  --references <ref[,ref...]>",
       "  --depends-on <pack[,pack...]>",
       "  --force",
     ].join("\n")

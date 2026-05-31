@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { defaultHelper } = require("../core/helpers");
 const {
   defaultManifest,
   normalizeManifest,
@@ -10,14 +11,14 @@ const {
   writeManifest,
 } = require("../core/manifest");
 const { renderSkillMarkdown } = require("../generator/skill-md");
-const { buildBundle, discoverPackDirectories, loadPack, resolvePackSelection } = require("../registry");
+const { buildBundle, discoverPackDirectories, loadPack } = require("../registry");
 
 async function createPack(options) {
   const root = options.root || process.cwd();
   const dir = resolveCreateDirectory(options, root);
   const name = options.name || path.basename(dir);
   const manifestPath = path.join(dir, "skillpack.manifest.json");
-  const skillId = options.skillId || "core";
+  const helperId = options.helperId || "core";
 
   fs.mkdirSync(dir, { recursive: true });
 
@@ -29,20 +30,15 @@ async function createPack(options) {
     name,
     purpose: options.purpose || "Describe the pack purpose here.",
     dependsOn: options.dependsOn || [],
-    skills: [
-      {
-        id: skillId,
+    helpers: [
+      defaultHelper({
+        id: helperId,
         title: options.title || "Core helper",
-        summary: options.summary || "Describe the skill in one sentence.",
-        purpose: options.purpose || "Describe the pack purpose here.",
-        contracts: ["Keep behavior stable.", "Prefer localized helper extraction."],
-        guarantees: ["Deterministic generation.", "Explicit semantic metadata."],
-        usagePatterns: ["Load only the packs that are required for the task."],
-        implementations: {
-          ts: options.ts || [],
-          rust: options.rust || [],
-        },
-      },
+        purpose: options.helperPurpose || options.purpose || "Describe the helper purpose here.",
+        tags: options.tags || [],
+        content: options.content || "Describe the helper body here.",
+        references: options.references || [],
+      }),
     ],
   });
 
@@ -64,7 +60,7 @@ async function validatePack(options) {
   const root = resolveRootDirectory(options);
   const packs = discoverPackDirectories(root).map((dir) => loadPack(dir));
   if (packs.length === 0) {
-    throw new Error(`No skill packs found under ${root}`);
+    throw new Error(`No helper packs found under ${root}`);
   }
 
   for (const pack of packs) {
@@ -84,7 +80,7 @@ async function buildOutput(options) {
     const packDir = path.join(outDir, sanitizeFileName(pack.manifest.name));
     fs.mkdirSync(packDir, { recursive: true });
     fs.writeFileSync(path.join(packDir, "skillpack.manifest.json"), JSON.stringify(pack.manifest, null, 2) + "\n", "utf8");
-    fs.writeFileSync(path.join(packDir, "SKILL.md"), pack.skillMarkdown, "utf8");
+    fs.writeFileSync(path.join(packDir, "SKILL.md"), pack.helperMarkdown, "utf8");
   }
   console.log(`Built bundle at ${outDir}`);
 }

@@ -41,60 +41,67 @@ test("help shows only the supported CLI commands", () => {
   assert.doesNotMatch(result.stdout, /\bexplain\b/);
 });
 
-test("create scaffolds a pack and update regenerates SKILL.md", () => {
+test("create scaffolds helper fields and update regenerates SKILL.md", () => {
   const root = tempDir("skillpack-helper-create-");
   const packDir = path.join(root, "example");
 
   const createResult = runCli(["create", packDir, "--name", "example-pack"]);
   assert.equal(createResult.status, 0);
-  assert.ok(fs.existsSync(path.join(packDir, "skillpack.manifest.json")));
+  const manifestPath = path.join(packDir, "skillpack.manifest.json");
+  assert.ok(fs.existsSync(manifestPath));
   assert.ok(fs.existsSync(path.join(packDir, "SKILL.md")));
 
-  const manifest = JSON.parse(fs.readFileSync(path.join(packDir, "skillpack.manifest.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  assert.ok(Array.isArray(manifest.helpers));
+  assert.equal(manifest.helpers.length, 1);
+  assert.equal(manifest.helpers[0].id, "core");
+  assert.ok(typeof manifest.helpers[0].jscpid === "string");
+
   manifest.purpose = "Updated purpose.";
-  fs.writeFileSync(path.join(packDir, "skillpack.manifest.json"), JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  manifest.helpers[0].content = "Updated helper body.";
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n", "utf8");
 
   const updateResult = runCli(["update", packDir]);
   assert.equal(updateResult.status, 0);
   const updated = fs.readFileSync(path.join(packDir, "SKILL.md"), "utf8");
   assert.match(updated, /Updated purpose\./);
+  assert.match(updated, /Helper Dictionary/);
+  assert.match(updated, /Updated helper body\./);
 });
 
-test("validate build and pack support duplicate skill dedupe", () => {
+test("validate build and pack dedupe helpers through JSCPID", () => {
   const root = tempDir("skillpack-helper-dedupe-");
   writeManifest(path.join(root, "a"), {
     name: "pack-a",
     version: "0.1.0",
-    purpose: "Shared skill.",
+    purpose: "Shared helper.",
+    summary: "Pack A.",
     dependsOn: [],
-    skills: [
+    helpers: [
       {
         id: "shared",
-        title: "Shared",
-        summary: "Same semantics.",
-        purpose: "Shared skill.",
-        contracts: ["Keep behavior stable."],
-        guarantees: ["Deterministic generation."],
-        usagePatterns: ["Load only required packs."],
-        implementations: { ts: ["src/shared"], rust: [] },
+        title: "Shared helper",
+        purpose: "Shared helper.",
+        tags: ["shared", "core"],
+        content: "function add(a, b) {\n  return a + b;\n}\n",
+        references: ["src/shared"],
       },
     ],
   });
   writeManifest(path.join(root, "b"), {
     name: "pack-b",
     version: "0.1.0",
-    purpose: "Shared skill.",
+    purpose: "Shared helper.",
+    summary: "Pack B.",
     dependsOn: [],
-    skills: [
+    helpers: [
       {
         id: "shared-copy",
-        title: "Shared copy",
-        summary: "Same semantics.",
-        purpose: "Shared skill.",
-        contracts: ["Keep behavior stable."],
-        guarantees: ["Deterministic generation."],
-        usagePatterns: ["Load only required packs."],
-        implementations: { ts: ["src/shared"], rust: [] },
+        title: "Shared helper",
+        purpose: "Shared helper.",
+        tags: ["core", "shared"],
+        content: "    function add(a, b) {\n      return a + b;\n    }\n",
+        references: ["src/shared"],
       },
     ],
   });
@@ -107,12 +114,15 @@ test("validate build and pack support duplicate skill dedupe", () => {
   const buildResult = runCli(["build", root, "--out", outDir]);
   assert.equal(buildResult.status, 0);
   const bundle = JSON.parse(fs.readFileSync(path.join(outDir, "bundle.json"), "utf8"));
+  assert.deepEqual(bundle.dependencyOrder, ["pack-a", "pack-b"]);
   assert.equal(bundle.packs.length, 2);
-  assert.equal(bundle.duplicateSkills.length, 1);
+  assert.equal(bundle.helperDictionary.canonical.length, 1);
+  assert.equal(bundle.helperDictionary.duplicates.length, 1);
+  assert.equal(bundle.helperDictionary.duplicates[0].kept.packName, "pack-a");
+  assert.equal(bundle.helperDictionary.duplicates[0].removed.packName, "pack-b");
 
   const packResult = runCli(["pack", root]);
   assert.equal(packResult.status, 0);
   const packBundle = JSON.parse(packResult.stdout);
-  assert.equal(packBundle.packs.length, 2);
-  assert.equal(packBundle.duplicateSkills.length, 1);
+  assert.deepEqual(packBundle, bundle);
 });
