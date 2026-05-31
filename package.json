@@ -2,6 +2,14 @@
   "name": "coding-helper",
   "version": "0.1.0",
   "description": "Helper pack npm module for stable AI coding workflows.",
+  "homepage": "https://github.com/YU000jp/coding-helper#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YU000jp/coding-helper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YU000jp/coding-helper/issues"
+  },
   "keywords": [
     "ai",
     "coding",
@@ -10,7 +18,7 @@
     "workspace",
     "prompting"
   ],
-  "author": "OpenAI",
+  "author": "YU000jp",
   "type": "commonjs",
   "main": "src/index.js",
   "exports": {
