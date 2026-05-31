@@ -79,7 +79,7 @@ test("renderSkillMarkdown includes core metadata", () => {
 });
 
 test("buildBundle deduplicates identical skills across packs", () => {
-  const root = tempDir("coding-helper-");
+  const root = tempDir("skillpack-helper-");
   writePack(path.join(root, "a"), {
     name: "pack-a",
     purpose: "Shared skill.",
@@ -119,7 +119,7 @@ test("buildBundle deduplicates identical skills across packs", () => {
 });
 
 test("buildBundle rejects circular dependencies", () => {
-  const root = tempDir("coding-helper-cycle-");
+  const root = tempDir("skillpack-helper-cycle-");
   writePack(path.join(root, "a"), {
     name: "pack-a",
     purpose: "Cycle test.",

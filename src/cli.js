@@ -145,7 +145,7 @@ function normalizePath(value) {
 function printHelp() {
   console.log(
     [
-      "coding-helper <command> [options]",
+      "skillpack-helper <command> [options]",
       "",
       "Commands:",
       "  create    Scaffold a new skill pack",

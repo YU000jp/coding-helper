@@ -1,6 +1,10 @@
-# coding-helper
+# @yu000jp/skillpack-helper
 
-`coding-helper` is a support library for other repositories that want to package and reuse AI coding knowledge as skill packs.
+`@yu000jp/skillpack-helper` is a support library for other repositories that want to package and reuse AI coding knowledge as skill packs.
+
+Repository:
+
+- https://github.com/YU000jp/skillpack-helper
 
 Use this package when you want to:
 
@@ -12,7 +16,7 @@ Use this package when you want to:
 ## Install
 
 ```bash
-npm install coding-helper
+npm install @yu000jp/skillpack-helper
 ```
 
 ## Use From Another Repository
@@ -25,31 +29,31 @@ const {
   normalizeManifest,
   renderSkillMarkdown,
   buildBundle,
-} = require("coding-helper");
+} = require("@yu000jp/skillpack-helper");
 ```
 
 ### ESM
 
 ```js
-import codingHelper from "coding-helper";
+import skillpackHelper from "@yu000jp/skillpack-helper";
 
 const {
   validateManifest,
   normalizeManifest,
   renderSkillMarkdown,
   buildBundle,
-} = codingHelper;
+} = skillpackHelper;
 ```
 
 ### Schema Access
 
 ```js
-const { manifestSchemaPath } = require("coding-helper");
+const { manifestSchemaPath } = require("@yu000jp/skillpack-helper");
 ```
 
 You can also reference the packaged schema directly:
 
-- `coding-helper/schema/skillpack.manifest.schema.json`
+- `@yu000jp/skillpack-helper/schema/skillpack.manifest.schema.json`
 
 ## Recommended Workflow
 
@@ -61,15 +65,16 @@ You can also reference the packaged schema directly:
 ## CLI
 
 ```bash
-coding-helper create ./packs/example --name example-pack
-coding-helper update ./packs/example
-coding-helper validate ./packs
-coding-helper list ./packs
-coding-helper explain ./packs/example
-coding-helper build ./packs --out ./dist
-coding-helper pack ./packs --out ./bundle.json
+skillpack-helper create ./packs/example --name example-pack
+skillpack-helper update ./packs/example
+skillpack-helper validate ./packs
+skillpack-helper list ./packs
+skillpack-helper explain ./packs/example
+skillpack-helper build ./packs --out ./dist
+skillpack-helper pack ./packs --out ./bundle.json
 ```
 
+- `skillpack-helper` is the primary CLI
 - `create` scaffolds a new pack
 - `update` regenerates `SKILL.md` from the manifest
 - `validate` checks structure and semantic consistency

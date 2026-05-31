@@ -1,14 +1,14 @@
 {
-  "name": "coding-helper",
+  "name": "@yu000jp/skillpack-helper",
   "version": "0.1.0",
-  "description": "Helper pack npm module for stable AI coding workflows.",
-  "homepage": "https://github.com/YU000jp/coding-helper#readme",
+  "description": "Support library for packaging AI coding knowledge into reusable skill packs.",
+  "homepage": "https://github.com/YU000jp/skillpack-helper#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YU000jp/coding-helper.git"
+    "url": "git+https://github.com/YU000jp/skillpack-helper.git"
   },
   "bugs": {
-    "url": "https://github.com/YU000jp/coding-helper/issues"
+    "url": "https://github.com/YU000jp/skillpack-helper/issues"
   },
   "keywords": [
     "ai",
@@ -40,7 +40,7 @@
     "package.json"
   ],
   "bin": {
-    "coding-helper": "src/cli.js"
+    "skillpack-helper": "src/cli.js"
   },
   "scripts": {
     "test": "node --test",
