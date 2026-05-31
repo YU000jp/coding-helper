@@ -1,0 +1,8 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["**/skillpack.manifest.json"],
+      "url": "./schema/skillpack.manifest.schema.json"
+    }
+  ]
+}
